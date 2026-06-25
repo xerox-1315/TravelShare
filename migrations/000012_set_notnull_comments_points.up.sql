@@ -1,0 +1,1 @@
+ALTER TABLE comments_points ALTER COLUMN text SET NOT NULL;

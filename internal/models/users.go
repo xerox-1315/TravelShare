@@ -8,6 +8,7 @@ type User struct {
 	Email          string    `json:"email" gorm:"unique;not null;size:100"`
 	Password       string    `json:"-" gorm:"not null;size:100"`
 	ProfileImage   string    `json:"profile_image"`
+	Description    string    `json:"description"`
 	PointsCount    int       `json:"points_count" gorm:"default:0"`
 	LifehacksCount int       `json:"lifehacks_count" gorm:"default:0"`
 	TravelLevel    int       `json:"travel_level" gorm:"default:0"`
