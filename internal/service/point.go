@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/xerox-1315/TravelShare.git/errs"
 	"github.com/xerox-1315/TravelShare.git/internal/db"
 	"github.com/xerox-1315/TravelShare.git/internal/dto"
 	"github.com/xerox-1315/TravelShare.git/internal/models"
@@ -62,6 +63,27 @@ func (ps *PointService) GetPointByID(id int) (*dto.PointFullResponse, error) {
 		UpdatedAt:      point.UpdatedAt,
 	}
 	return &pointDTO, nil
+}
+
+func (ps *PointService) GetPointsNearby(latitude, longitude float64, radius int) ([]*dto.PointResponse, error) {
+	points, err := ps.repo.GetPointsNearby(latitude, longitude, radius)
+	if err != nil {
+		return nil, err
+	}
+	var pointsDTO []*dto.PointResponse
+	for _, point := range points {
+		pointDTO := dto.PointResponse{
+			ID:        point.ID,
+			Latitude:  point.Latitude,
+			Longitude: point.Longitude,
+			SeasonID:  point.SeasonID,
+		}
+		pointsDTO = append(pointsDTO, &pointDTO)
+	}
+	if len(pointsDTO) == 0 {
+		return nil, errs.ErrorNotFoundPointsNearby
+	}
+	return pointsDTO, nil
 }
 
 func (ps *PointService) CreatePoint(userID uint, req dto.CreatePointRequest) (*dto.PointFullResponse, error) {

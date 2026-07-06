@@ -15,3 +15,6 @@ var ErrorSeasonNotFound = errors.New("Сезон с таким id не найд�
 var ErrorFindAllPoints = errors.New("Ошибка нахождения всех точек в БД")
 var ErrorFindPointByID = errors.New("Ошибка нахождения точки в БД")
 var ErrorCreatePoint = errors.New("Ошибка создания точки")
+var ErrorFindPointsNearby = errors.New("Ошибка нахождения точек в области")
+var ErrorNotFoundPointsNearby = errors.New("Метки в данном диапазоне не найдены")
+var ErrorNotFoundPointByID = errors.New("Метка с таким ID не найдена")

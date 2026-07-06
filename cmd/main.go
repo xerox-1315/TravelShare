@@ -53,6 +53,7 @@ func main() {
 		protected.GET("/points", pointHandler.GetAllPoints)
 		protected.POST("/point", pointHandler.CreatePoint)
 		protected.GET("/point/:id", pointHandler.GetPointByID)
+		protected.GET("/points/nearby", pointHandler.GetPointsNearby)
 	}
 
 	// запускаем сервер

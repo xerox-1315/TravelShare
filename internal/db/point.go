@@ -38,10 +38,33 @@ func (pr *PointRepository) GetPointByID(id int) (*models.Point, error) {
             ST_X(coords::geometry) as longitude,
             ST_Y(coords::geometry) as latitude
 			FROM points WHERE id = ?`, id).Scan(&point)
-	if result.Error != nil || point.ID == 0 {
+	if result.Error != nil {
 		return nil, errs.ErrorFindPointByID
 	}
+	if point.ID == 0 {
+		return nil, errs.ErrorNotFoundPointByID
+	}
 	return &point, nil
+}
+
+func (pr *PointRepository) GetPointsNearby(latitude, longitude float64, radius int) ([]*models.Point, error) {
+	var points []*models.Point
+	result := pr.db.Raw(`
+	SELECT id, user_id, season_id, region_id, category_id,
+           difficult_level, title, description, image,
+           ST_X(coords::geometry) as longitude,
+           ST_Y(coords::geometry) as latitude
+    FROM points
+    WHERE ST_DWithin(
+        coords,
+        ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+        ?
+    )`,
+		longitude, latitude, radius).Scan(&points)
+	if result.Error != nil {
+		return nil, errs.ErrorFindPointsNearby
+	}
+	return points, nil
 }
 
 func (pr *PointRepository) CreatePoint(point *models.Point) error {
