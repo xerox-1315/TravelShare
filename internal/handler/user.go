@@ -8,7 +8,7 @@ import (
 	"github.com/xerox-1315/TravelShare.git/internal/service"
 )
 
-// слой обработки запросов
+// слой обработки запросов (пользователи)
 type UserHandler struct {
 	service *service.UserService
 }
@@ -58,7 +58,7 @@ func (uh *UserHandler) Register(c *gin.Context) {
 		return
 	}
 	// успешная регистрация
-	c.JSON(http.StatusOK, gin.H{"message": "Пользователь успешно зарегистрирован"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Пользователь успешно зарегистрирован"})
 }
 
 func (uh *UserHandler) Login(c *gin.Context) {
@@ -83,4 +83,13 @@ func (uh *UserHandler) Login(c *gin.Context) {
 	}
 	// успешная аутентификация - передаем токен на выход
 	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func (uh *UserHandler) GetProfile(c *gin.Context) {
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "не авторизован"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"info": "Ваш профиль", "user_id": userID})
 }

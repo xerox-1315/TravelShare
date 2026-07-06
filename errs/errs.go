@@ -11,3 +11,7 @@ var ErrorPasswordLenght = errors.New("Длина пароля должна бы�
 var ErrorGenerateToken = errors.New("Не удалось сгенерировать токен")
 var ErrorInvalidToken = errors.New("Переданный токен невалиден")
 var ErrorWrongPassword = errors.New("Неверный пароль")
+var ErrorSeasonNotFound = errors.New("Сезон с таким id не найден")
+var ErrorFindAllPoints = errors.New("Ошибка нахождения всех точек в БД")
+var ErrorFindPointByID = errors.New("Ошибка нахождения точки в БД")
+var ErrorCreatePoint = errors.New("Ошибка создания точки")

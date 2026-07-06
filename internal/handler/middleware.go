@@ -10,6 +10,7 @@ import (
 
 // промежуточная оболочка для авторизации
 func AuthMiddleware() gin.HandlerFunc {
+	// возвращает функцию-промежуточный хендлер
 	return func(c *gin.Context) {
 		// достаем заголовок Authorization
 		authHeader := c.GetHeader("Authorization")
