@@ -54,6 +54,8 @@ func main() {
 		protected.POST("/point", pointHandler.CreatePoint)
 		protected.GET("/point/:id", pointHandler.GetPointByID)
 		protected.GET("/points/nearby", pointHandler.GetPointsNearby)
+		protected.POST("/vote", pointHandler.SetVote)
+		protected.PATCH("/vote", pointHandler.UpdateVote)
 	}
 
 	// запускаем сервер

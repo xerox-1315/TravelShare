@@ -86,10 +86,17 @@ func (uh *UserHandler) Login(c *gin.Context) {
 }
 
 func (uh *UserHandler) GetProfile(c *gin.Context) {
+	// получаем userID из middleware
 	userID, ok := c.Get("user_id")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "не авторизован"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"info": "Ваш профиль", "user_id": userID})
+	user, err := uh.service.GetProfile(userID.(uint))
+	if err != nil {
+		// пользователь с таким ID не найден
+		c.JSON(http.StatusNotFound, gin.H{"message": "Такой пользователь не найден"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
 }

@@ -1,6 +1,8 @@
 package db
 
 import (
+	"errors"
+
 	"github.com/xerox-1315/TravelShare.git/errs"
 	"github.com/xerox-1315/TravelShare.git/internal/models"
 	"gorm.io/gorm"
@@ -82,4 +84,43 @@ func (pr *PointRepository) CreatePoint(point *models.Point) error {
 		return errs.ErrorCreatePoint
 	}
 	return nil
+}
+
+func (pr *PointRepository) GetUserVoteByPointID(userID, pointID uint) (bool, *models.VotePoint, error) {
+	var votePoint models.VotePoint
+	result := pr.db.Where("user_id = ?", userID).Where("point_id = ?", pointID).First(&votePoint)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false, nil, nil // не голосовал
+		}
+		return false, nil, result.Error
+	}
+	return true, &votePoint, nil // уже голосовал
+
+}
+
+func (pr *PointRepository) SetVote(userID, pointID uint, typeVote string) (*models.VotePoint, error) {
+	votePoint := models.VotePoint{
+		UserID:   userID,
+		PointID:  pointID,
+		TypeVote: typeVote,
+	}
+	result := pr.db.Create(&votePoint)
+	if result.Error != nil {
+		return nil, errs.ErrorCreateVotePoint
+	}
+	return &votePoint, nil
+}
+
+func (pr *PointRepository) UpdateVote(userID, pointID uint, typeVote string) (*models.VotePoint, error) {
+	votePoint := models.VotePoint{
+		UserID:  userID,
+		PointID: pointID,
+	}
+	// обновить оценку на метку
+	result := pr.db.Model(&votePoint).Where("user_id = ? AND point_id = ?", userID, pointID).Update("type_vote", typeVote)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &votePoint, nil
 }

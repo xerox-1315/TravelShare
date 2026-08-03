@@ -36,3 +36,8 @@ type CreatePointRequest struct {
 	Description    string  `json:"description" binding:"required"`
 	Image          string  `json:"image"`
 }
+
+type VotePoint struct {
+	PointID  uint   `json:"point_id"`
+	TypeVote string `json:"type"`
+}

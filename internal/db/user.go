@@ -48,3 +48,14 @@ func (ur *UserRepository) GetUserByUsername(username string) (*models.User, erro
 	}
 	return &user, nil
 }
+
+func (ur *UserRepository) GetProfile(userID uint) (*models.User, error) {
+	var user models.User
+	// ищем первого пользователя с таким ID
+	result := ur.db.Where("id = ?", userID).First(&user)
+	if result.Error != nil {
+		return nil, errs.ErrorUserNotFound
+	}
+	// возвращаем указатель на объект пользователя
+	return &user, nil
+}

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/xerox-1315/TravelShare.git/errs"
 	"github.com/xerox-1315/TravelShare.git/internal/db"
 	"github.com/xerox-1315/TravelShare.git/internal/dto"
@@ -118,4 +120,74 @@ func (ps *PointService) CreatePoint(userID uint, req dto.CreatePointRequest) (*d
 		Image:          point.Image,
 	}
 	return &response, nil
+}
+
+func (ps *PointService) SetVote(userID, pointID uint, typeVote string) (*models.VotePoint, error) {
+	// проверка голоса на один из двух типов
+	if typeVote != "like" && typeVote != "dislike" {
+		return nil, errs.ErrorInvalidTypeOfVote
+	}
+
+	// проверка существования метки с данным ID
+	_, err := ps.repo.GetPointByID(int(pointID))
+	if errors.Is(err, errs.ErrorNotFoundPointByID) {
+		return nil, err
+	}
+
+	// проверка, ставил ли данный пользователь голос на данную метку
+	exist, voteExist, err := ps.repo.GetUserVoteByPointID(userID, pointID)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		// если новая метка отличная от существующей
+		if typeVote != voteExist.TypeVote {
+			// обновляем данные в БД на новые
+			voteDTO, err := ps.repo.UpdateVote(userID, pointID, typeVote)
+			if err != nil {
+				return nil, err
+			}
+			return voteDTO, nil
+		} else {
+			// иначе не даем поставить еще такую же оценку
+			return nil, errs.ErrorExistVoteFromUser
+		}
+	}
+
+	// случай, когда пользователь еще не ставил оценку на данную точку
+	voteDTO, err := ps.repo.SetVote(userID, pointID, typeVote)
+	if err != nil {
+		return nil, err
+	}
+	return voteDTO, nil
+}
+
+func (ps *PointService) UpdateVote(userID, pointID uint, typeVote string) (*models.VotePoint, error) {
+	// проверка голоса на один из двух типов
+	if typeVote != "like" && typeVote != "dislike" {
+		return nil, errs.ErrorInvalidTypeOfVote
+	}
+
+	// проверка существования метки с данным ID
+	_, err := ps.repo.GetPointByID(int(pointID))
+	if errors.Is(err, errs.ErrorNotFoundPointByID) {
+		return nil, err
+	}
+
+	// проверка, ставил ли данный пользователь голос на данную метку
+	exist, _, err := ps.repo.GetUserVoteByPointID(userID, pointID)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		// если голоса от пользователя на данную метку не было
+		return nil, errs.ErrorNotExistVoteFromUser
+	}
+
+	// обновляем данные в БД на новые
+	voteDTO, err := ps.repo.UpdateVote(userID, pointID, typeVote)
+	if err != nil {
+		return nil, err
+	}
+	return voteDTO, nil
 }

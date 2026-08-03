@@ -64,3 +64,12 @@ func (us *UserService) Login(email, password string) (string, error) {
 	}
 	return token, nil
 }
+
+func (us *UserService) GetProfile(userID uint) (*models.User, error) {
+	// обращаемся к БД для получения пользователя
+	user, err := us.repo.GetProfile(userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
