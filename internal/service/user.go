@@ -1,21 +1,28 @@
 package service
 
 import (
+	"encoding/json"
+	"log"
 	"unicode/utf8"
 
 	"github.com/xerox-1315/TravelShare.git/errs"
+	"github.com/xerox-1315/TravelShare.git/internal/cache"
 	"github.com/xerox-1315/TravelShare.git/internal/db"
+	"github.com/xerox-1315/TravelShare.git/internal/grpc"
 	"github.com/xerox-1315/TravelShare.git/internal/models"
 )
 
 // слой логики приложения
 type UserService struct {
-	repo *db.UserRepository
+	repo        *db.UserRepository
+	emailClient *grpc.EmailClient
+	redisClient *cache.RedisClient
 }
 
 // инициализация слоя
-func NewUserService(repo *db.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo *db.UserRepository, emailClient *grpc.EmailClient,
+	redisClient *cache.RedisClient) *UserService {
+	return &UserService{repo: repo, emailClient: emailClient, redisClient: redisClient}
 }
 
 func (us *UserService) Register(username, email, password, profileImage, description string) error {
@@ -36,15 +43,63 @@ func (us *UserService) Register(username, email, password, profileImage, descrip
 		return errs.ErrorPasswordLenght
 	}
 
+	// упаковка данных пользователя в json-формат
+	userData, _ := json.Marshal(map[string]string{
+		"username":      username,
+		"email":         email,
+		"password":      password,
+		"profile_image": profileImage,
+		"description":   description,
+	})
+	// сохранение данных пользователя в redis хранилище
+	err = us.redisClient.SaveUser(email, userData)
+	if err != nil {
+		log.Println("Ошибка сохранения в Redis:", err)
+		return err
+	}
+	log.Println("Данные сохранены в Redis")
+
+	// отправка кода на почту через email-сервис
+	_, err = us.emailClient.SendVerificationCode(email)
+	if err != nil {
+		log.Println("Ошибка gRPC вызова:", err)
+		return err
+	}
+	log.Println("Код отправлен через gRPC")
+	return err
+}
+
+func (us *UserService) Verify(email, code string) (*models.User, error) {
+	// проверка кода через email сервис
+	verify, err := us.emailClient.VerifyCode(email, code)
+	if err != nil {
+		log.Println("ошибка проверка кода:", err)
+		return nil, err
+	}
+	log.Println("код проверен через gRPC")
+	if !verify {
+		return nil, errs.ErrorInvalidCode
+	}
+
+	// если код верен - достаем данные пользователя из redis
+	data, err := us.redisClient.GetUser(email)
+	if err != nil {
+		log.Println("ошибка получения данных из redis")
+		return nil, err
+	}
+	log.Println("данные получены из redis")
+	// распаковываем данные
+	var userData map[string]string
+	json.Unmarshal(data, &userData)
 	// создание экземпляра пользователя с переданными данными
 	user := &models.User{
-		Username:     username,
-		Email:        email,
-		Password:     password,
-		ProfileImage: profileImage,
-		Description:  description,
+		Username:     userData["username"],
+		Email:        userData["email"],
+		Password:     userData["password"],
+		ProfileImage: userData["profileImage"],
+		Description:  userData["description"],
 	}
-	return us.repo.CreateUser(user)
+	return user, us.repo.CreateUser(user)
 }
 
 func (us *UserService) Login(email, password string) (string, error) {

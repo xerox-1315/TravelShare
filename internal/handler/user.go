@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/xerox-1315/TravelShare.git/errs"
+	"github.com/xerox-1315/TravelShare.git/internal/dto"
 	"github.com/xerox-1315/TravelShare.git/internal/service"
 )
 
@@ -18,23 +20,8 @@ func NewUserHandler(service *service.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
-// структура запроса регистрации пользователя
-type RegisterRequest struct {
-	Username     string `json:"username" binding:"required"`
-	Email        string `json:"email" binding:"required,email"`
-	Password     string `json:"password" binding:"required"`
-	ProfileImage string `json:"profile_image"`
-	Description  string `json:"description"`
-}
-
-// структура запроса входа пользователя
-type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-}
-
 func (uh *UserHandler) Register(c *gin.Context) {
-	var req RegisterRequest
+	var req dto.RegisterRequest
 
 	// распаковываем JSON из тела запроса
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -57,12 +44,34 @@ func (uh *UserHandler) Register(c *gin.Context) {
 		}
 		return
 	}
-	// успешная регистрация
-	c.JSON(http.StatusCreated, gin.H{"message": "Пользователь успешно зарегистрирован"})
+	// код отправлен, можно ожидать верификации
+	c.JSON(http.StatusOK, gin.H{"message": "Код подтверждения отправлен на почту"})
+}
+
+func (uh *UserHandler) Verify(c *gin.Context) {
+	var req dto.VerifyRequest
+	// распаковываем JSON из тела запроса
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// при ошибке возвращаем, что данные переданы неправильно
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Переданы некорректные данные запроса"})
+		return
+	}
+
+	user, err := uh.service.Verify(req.Email, req.Code)
+	if err != nil {
+		if errors.Is(err, errs.ErrorInvalidCode) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Неверный код подтверждения"})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Внутренняя ошибка сервера"})
+			return
+		}
+	}
+	c.JSON(http.StatusCreated, user)
 }
 
 func (uh *UserHandler) Login(c *gin.Context) {
-	var req LoginRequest
+	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Переданы неккоректные данные запроса"})
 		return

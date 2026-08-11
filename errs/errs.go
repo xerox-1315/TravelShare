@@ -22,3 +22,4 @@ var ErrorCreateVotePoint = errors.New("Не удалось утсановить 
 var ErrorInvalidTypeOfVote = errors.New("Невалидный тип оценки (лайк/дизлайк)")
 var ErrorExistVoteFromUser = errors.New("Данный пользователь уже оставлял оценку на эту метку")
 var ErrorNotExistVoteFromUser = errors.New("Оценки от данного пользователя на данную метку нет")
+var ErrorInvalidCode = errors.New("Неверный код")

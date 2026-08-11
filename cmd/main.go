@@ -2,10 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/xerox-1315/TravelShare.git/internal/cache"
 	"github.com/xerox-1315/TravelShare.git/internal/db"
+	"github.com/xerox-1315/TravelShare.git/internal/grpc"
 	"github.com/xerox-1315/TravelShare.git/internal/handler"
 	"github.com/xerox-1315/TravelShare.git/internal/service"
 )
@@ -23,9 +27,19 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
+
+	// инициализируем gRPC клиент
+	emailClient, err := grpc.NewEmailClient(os.Getenv("EMAIL_SERVICE_ADDR"))
+	if err != nil {
+		log.Fatal("Ошибка подключения к Email Service: ", err)
+	}
+	// инициализируем redis клиент
+	redisClient := cache.NewRedisClient(os.Getenv("REDIS_HOST"),
+		os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
+
 	// инициализация слоев системы (пользователи)
 	userRepo := db.NewUserRepository(database)
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(userRepo, emailClient, redisClient)
 	userHandler := handler.NewUserHandler(userService)
 
 	// инициализация слоев системы (метки)
@@ -43,6 +57,8 @@ func main() {
 		auth.POST("/register", userHandler.Register)
 		// вход
 		auth.POST("/login", userHandler.Login)
+		// верификация
+		auth.POST("/verify", userHandler.Verify)
 	}
 
 	// защищенные роуты
